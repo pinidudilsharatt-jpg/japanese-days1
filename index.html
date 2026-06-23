@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ජපන් වචන සහ ප්‍රගති දිනපොත</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        /* මූලික සැකසුම් */
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 850px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        
+        /* 📊 සංඛ්‍යාලේඛන සහ සැකසුම් */
+        .stats-container {
+            background: #edf2f4;
+            border: 1px solid #ccc;
+            border-radius: 12px;
+            padding: 10px 15px;
+            display: inline-block;
+            text-align: left;
+            margin-top: 15px;
+        }
+        .config-box {
+            margin-top: 10px;
+            font-size: 13px;
+            font-weight: bold;
+            color: #023e8a;
+        }
+        .config-box select {
+            padding: 5px 10px;
+            font-size: 13px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        @media (min-width: 601px) {
+            .header-flex {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-bottom: 2px solid #eee;
+                padding-bottom: 15px;
+                margin-bottom: 15px;
+            }
+            .stats-container { margin-top: 0; }
+        }
+        .stats-item {
+            font-size: 13px;
+            font-weight: bold;
+            color: #2b2d42;
+            margin: 2px 0;
+        }
+        .stats-number {
+            color: #d90429;
+            font-size: 16px;
+            font-weight: 800;
+        }
+
+        h1 { color: #d90429; margin: 0 0 5px 0; font-size: 26px; text-align: left; }
+        @media (max-width: 600px) { 
+            h1 { text-align: center; font-size: 22px; }
+            .stats-container { text-align: center; width: 100%; }
+        }
+
+        h2 { 
+            color: #2b2d42; 
+            margin-top: 35px; 
+            border-bottom: 2px solid #eee; 
+            padding-bottom: 10px;
+            font-size: 20px;
+        }
+        p.description { color: #666; font-size: 14px; margin: 0; text-align: left; }
+        @media (max-width: 600px) { p.description { text-align: center; } }
+        
+        .date-box {
+            background-color: #2b2d42;
+            color: white;
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+
+        /* Word Cards */
+        .word-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 25px;
+        }
+        .word-card {
+            background: #fff;
+            padding: 25px 10px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            flex: 1 1 calc(20% - 12px);
+            min-width: 130px;
+            border: 1px solid #eee;
+            border-bottom: 4px solid #d90429;
+        }
+        .japanese { font-size: 26px; font-weight: bold; color: #2b2d42; margin-bottom: 8px; }
+        .sinhala { font-size: 16px; font-weight: bold; color: #ef233c; }
+
+        /* බටන් */
+        .btn-group { margin-top: 25px; }
+        button {
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            background-color: #2b2d42;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+            margin: 5px;
+        }
+        button:hover { background-color: #d90429; }
+        .btn-success { background-color: #2b9348; }
+        .btn-success:hover { background-color: #007f5f; }
+        .btn-info { background-color: #023e8a; }
+        .btn-info:hover { background-color: #0077b6; }
+        .btn-danger-outline { background-color: transparent; color: #d90429; border: 2px solid #d90429; }
+        .btn-danger-outline:hover { background-color: #d90429; color: white; }
+
+        /* 🔄 SWIPE කළ හැකි සැබෑ කැලැන්ඩර සැකසුම */
+        .calendar-months-container {
+            display: flex;
+            flex-direction: row;
+            gap: 15px;
+            margin-top: 15px;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            padding: 10px 5px 20px 5px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .calendar-months-container::-webkit-scrollbar { height: 8px; }
+        .calendar-months-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .calendar-months-container::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 10px; }
+
+        .month-sheet {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 14px;
+            padding: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            flex: 0 0 100%;
+            max-width: 340px;
+            scroll-snap-align: center;
+            margin: 0 auto;
+        }
+        .month-sheet-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #023e8a;
+            text-align: center;
+            margin-bottom: 10px;
+            background: #eef1f6;
+            padding: 6px;
+            border-radius: 6px;
+            text-transform: uppercase;
+        }
+        .week-days-header {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-bottom: 6px;
+        }
+        .week-day-name {
+            font-size: 10px;
+            font-weight: bold;
+            color: #555;
+            background: #f8f9fa;
+            padding: 4px 0;
+            border-radius: 4px;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+        .day-box {
+            background: #edf2f4;
+            padding: 8px 1px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 12px;
+            color: #444;
+            border: 1px solid #ddd;
+            transition: 0.2s;
+            position: relative;
+        }
+        /* අද දවස විශේෂයෙන් පෙන්වීමට */
+        .day-box.today {
+            border: 2px solid #d90429 !important;
+            background: #fff3f5;
+        }
+        .day-box.completed { 
+            background: #2b9348; 
+            color: white; 
+            border-color: #007f5f; 
+            cursor: pointer; 
+        }
+        .day-box.completed:hover { background: #1e7134; }
+        .day-box .status { font-size: 7px; display: block; margin-top: 1px; font-weight: normal; }
+
+        /* හිස්ට්‍රි */
+        .history-box {
+            margin-top: 20px;
+            padding: 15px;
+            background: #eef1f6;
+            border-radius: 12px;
+            border-left: 6px solid #2b9348;
+            text-align: left;
+            display: none;
+        }
+        .history-title { font-weight: bold; color: #2b2d42; margin-bottom: 10px; font-size: 16px; }
+
+        /* Form සහ Excel Upload සැකසුම් */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 400px;
+            margin: 20px auto 0 auto;
+        }
+        .form-group input {
+            padding: 12px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            width: 100%;
+        }
+        
+        .excel-upload-box {
+            background: #f0f7f4;
+            border: 2px dashed #2b9348;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        /* සියලුම වචන ලැයිස්තුව */
+        .all-words-list {
+            margin-top: 20px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: left;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+        }
+        .word-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .word-item-row:last-child { border-bottom: none; }
+        .word-details { font-size: 14px; color: #2b2d42; }
+        .word-action-btns button { padding: 5px 10px; font-size: 11px; margin: 0 2px; border-radius: 4px; }
+        .btn-edit { background-color: #f77f00; }
+        .btn-edit:hover { background-color: #fcbf49; }
+        .btn-delete { background-color: #d90429; }
+        .btn-delete:hover { background-color: #ef233c; }
+
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .container { padding: 20px 10px; }
+            .word-card { flex: 1 1 calc(50% - 12px); padding: 15px 5px; }
+            button { width: 100%; margin: 5px 0; padding: 14px; }
+            .month-sheet { flex: 0 0 92%; }
+            .word-item-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .word-action-btns { width: 100%; display: flex; }
+            .word-action-btns button { flex: 1; padding: 10px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <div class="header-flex">
+        <div>
+            <h1>🇯🇵 මගේ ජපන් භාෂා දිනපොත</h1>
+            <p class="description">දවසට වචන 5ක් ඉගෙන ගෙන අභියෝගය ජය ගනිමු!</p>
+            
+            <div class="config-box">
+                🎯 මගේ ඉලක්කය: 
+                <select id="studyMonthsSelect" onchange="changeStudyDuration(this.value)">
+                    <option value="1">මාස 1</option>
+                    <option value="2">මාස 2</option>
+                    <option value="3">මාස 3</option>
+                    <option value="6">මාස 6</option>
+                    <option value="12" selected>මාස 12 (අවුරුදු 1 🎯)</option>
+                </select>
+            </div>
+        </div>
+        <div class="stats-container">
+            <div class="stats-item">📈 මුළු වචන ගණන: <span class="stats-number" id="totalWordsCount">0</span></div>
+            <div class="stats-item">⏳ ඉතිරි වචන ගණන: <span class="stats-number" id="remainingWordsCount">0</span></div>
+        </div>
+    </div>
+    
+    <div class="date-box" id="currentDate">අද දිනය ලෝඩ් වෙමින්...</div>
+
+    <div class="word-container" id="wordList"></div>
+    
+    <div class="btn-group">
+        <button onclick="generateWords()">වෙනත් වචන 5ක් පෙන්වන්න</button>
+        <button class="btn-success" onclick="markDayComplete()">අද දවසේ වැඩ ඉවරයි! (කැලැන්ඩරයේ සලකුණු කරන්න)</button>
+    </div>
+
+    <h2>📅 ප්‍රගති කැලැන්ඩරය</h2>
+    <p style="font-size: 11px; color: #ef233c; font-weight: bold; margin: 0 0 5px 0;">👉 වෙනත් මාස බැලීමට වමට/දකුණට ස්වීප් (Swipe) කරන්න 👈</p>
+    <p style="font-size: 12px; color: #666; margin: 0;">(පරණ වචන බැලීමට කොළ පාට වූ දින මත ක්ලික් කරන්න)</p>
+    
+    <div class="calendar-months-container" id="calendarMonthsWrapper"></div>
+    
+    <div class="history-box" id="historySection"></div>
+
+    <div style="margin-top: 15px;">
+        <button style="background-color: #8d99ae; font-size: 11px; padding: 6px 12px;" onclick="resetCalendar()">කැලැන්ඩරය මුල සිට ආරම්භ කරන්න</button>
+        <button class="btn-danger-outline" style="font-size: 11px; padding: 5px 12px;" onclick="clearAllWords()">🗑️ සිස්ටම් එකේ ඇති සියලුම වචන මකන්න</button>
+    </div>
+
+    <h2>➕ අලුත් වචන එකතු කරන්න</h2>
+    
+    <div class="form-group" style="margin-bottom: 15px;">
+        <div class="excel-upload-box">
+            <p style="margin: 0 0 10px 0; font-size: 13px; font-weight: bold; color: #2b9348;">📊 Excel (.xlsx) / CSV ගොනුවකින් වචන එකතු කරන්න:</p>
+            <p style="margin: 0 0 10px 0; font-size: 11px; color: #555;">(A තීරුව: ජපන් වචනය | B තීරුව: සිංහල තේරුම විය යුතුය)</p>
+            <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" onchange="uploadExcelWords(event)" style="font-size: 12px; border: none; padding: 5px;">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <input type="text" id="jpInput" placeholder="ජපන් වචනය (උදා: ねこ)">
+        <input type="text" id="siInput" placeholder="සිංහල තේරුම (උදා: බළලා)">
+        <button style="background-color: #e63946;" onclick="addNewWord()">වචනය එකතු කරන්න</button>
+        
+        <button class="btn-info" onclick="toggleAllWordsList()">දැනට ඇති සියලුම වචන බලන්න / සකසන්න ⚙️</button>
+    </div>
+
+    <div class="all-words-list" id="allWordsSection">
+        <h3 style="margin-top: 0; color: #023e8a; font-size: 16px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">📋 පද්ධතියේ ඇති සියලුම වචන ලැයිස්තුව</h3>
+        <div id="allWordsContainer"></div>
+    </div>
+</div>
+
+<script>
+    const defaultWords = [
+        { jp: "こんにちは", si: "ආයුබෝවන්" },
+        { jp: "ありがとう", si: "ස්තූතියි" },
+        { jp: "はい", si: "ඔව්" },
+        { jp: "いいえ", si: "නැහැ" },
+        { jp: "さようなら", si: "සමුගනිමි" },
+        { jp: "すみません", si: "සමාවෙන්න" },
+        { jp: "おはよう", si: "සුබ උදෑසනක්" },
+        { jp: "ほん", si: "පොත" },
+        { jp: "みず", si: "ජලය" },
+        { jp: "せんせい", si: "ගුරුවරයා" }
+    ];
+
+    let myWords = JSON.parse(localStorage.getItem('myJapaneseWords')) || defaultWords;
+    let completedDays = JSON.parse(localStorage.getItem('completedDays')) || {};
+    let studyMonths = parseInt(localStorage.getItem('studyMonths')) || 12; // Default එක අවුරුද්දක් කළා
+    let currentDisplayedWords = []; 
+
+    window.onload = function() {
+        document.getElementById('studyMonthsSelect').value = studyMonths;
+        displayLiveDate();
+        updateCounters();
+        generateWords();
+        renderCalendar();
+    };
+
+    function displayLiveDate() {
+        const today = new Date();
+        const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+        const formatter = new Intl.DateTimeFormat('si-LK', options);
+        document.getElementById('currentDate').innerText = "අද දවස: " + formatter.format(today);
+    }
+
+    function updateCounters() {
+        const learnedJpWords = new Set();
+        Object.values(completedDays).forEach(dayWords => {
+            dayWords.forEach(w => learnedJpWords.add(w.jp));
+        });
+
+        const totalCount = myWords.length;
+        const remainingCount = myWords.filter(word => !learnedJpWords.has(word.jp)).length;
+
+        document.getElementById('totalWordsCount').innerText = totalCount;
+        document.getElementById('remainingWordsCount').innerText = remainingCount;
+    }
+
+    function changeStudyDuration(val) {
+        studyMonths = parseInt(val);
+        localStorage.setItem('studyMonths', studyMonths);
+        renderCalendar();
+    }
+
+    function clearAllWords() {
+        if(confirm("🚨 අවධානයයි: පද්ධතියේ දැනට ඇති සියලුම වචන සම්පූර්ණයෙන්ම මකා දැමීමට ඔබට විශ්වාසද?")) {
+            myWords = [];
+            localStorage.setItem('myJapaneseWords', JSON.stringify(myWords));
+            updateCounters();
+            generateWords();
+            if (document.getElementById('allWordsSection').style.display === 'block') { renderAllWordsList(); }
+            alert("🧹 සියලුම වචන සාර්ථකව මකා දැමුවා.");
+        }
+    }
+
+    function uploadExcelWords(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array', codepage: 65001 });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+            let importedCount = 0;
+            let tempWords = [];
+
+            jsonData.forEach((row, index) => {
+                if (index === 0 && row[0] && (row[0].toString().toLowerCase().includes('jp') || row[0].toString().includes('ජපන්'))) {
+                    return;
+                }
+
+                if (row[0] && row[1]) {
+                    let jpWord = row[0].toString().trim();
+                    let siWord = row[1].toString().trim();
+                    
+                    if(!jpWord.includes('??') && !siWord.includes('??')) {
+                        tempWords.push({ jp: jpWord, si: siWord });
+                        importedCount++;
+                    }
+                }
+            });
+
+            if (importedCount > 0) {
+                myWords = myWords.concat(tempWords);
+                localStorage.setItem('myJapaneseWords', JSON.stringify(myWords));
+                updateCounters();
+                generateWords();
+                if (document.getElementById('allWordsSection').style.display === 'block') { renderAllWordsList(); }
+                alert(`🎉 සාර්ථකයි! අලුත් වචන ${importedCount}ක් සාර්ථකව එකතු කළා.`);
+            } else {
+                alert("❌ වැරදි ගොනුවක්! කරුණාකර නිවැරදි Excel එකක් ලබා දෙන්න.");
+            }
+            event.target.value = '';
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function generateWords() {
+        const container = document.getElementById('wordList');
+        container.innerHTML = ''; 
+        
+        const learnedJpWords = new Set();
+        Object.values(completedDays).forEach(dayWords => {
+            dayWords.forEach(w => learnedJpWords.add(w.jp));
+        });
+
+        const unlearnedWords = myWords.filter(word => !learnedJpWords.has(word.jp));
+
+        if(unlearnedWords.length < 5) {
+            container.innerHTML = `
+                <div style="color:#d90429; width:100%; padding: 20px; font-weight:bold;">
+                    ⚠️ පාඩම් කිරීමට අලුත් වචන ඉවරයි! <br>
+                    කරුණාකර පහළින් තවත් අලුත් වචන එකතු කරන්න.
+                </div>`;
+            currentDisplayedWords = [];
+            return;
+        }
+
+        const shuffled = [...unlearnedWords].sort(() => 0.5 - Math.random());
+        currentDisplayedWords = shuffled.slice(0, 5);
+
+        currentDisplayedWords.forEach(word => {
+            const card = document.createElement('div');
+            card.className = 'word-card';
+            card.innerHTML = `
+                <div class="japanese">${word.jp}</div>
+                <div class="sinhala">${word.si}</div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function addNewWord() {
+        const jp = document.getElementById('jpInput').value.trim();
+        const si = document.getElementById('siInput').value.trim();
+
+        if(!jp || !si) {
+            alert("කරුණාකර සියලුම හිස්තැන් පුරවන්න!");
+            return;
+        }
+
+        myWords.push({ jp, si });
+        localStorage.setItem('myJapaneseWords', JSON.stringify(myWords));
+        
+        document.getElementById('jpInput').value = '';
+        document.getElementById('siInput').value = '';
+
+        alert("වචනය සාර්ථකව එකතු කළා!");
+        
+        updateCounters();
+        if(document.getElementById('allWordsSection').style.display === 'block') { renderAllWordsList(); }
+        if(currentDisplayedWords.length === 0) { generateWords(); }
+    }
+
+    function toggleAllWordsList() {
+        const section = document.getElementById('allWordsSection');
+        if(section.style.display === 'block') {
+            section.style.display = 'none';
+        } else {
+            section.style.display = 'block';
+            renderAllWordsList();
+            section.scrollIntoView({ behavior: 'smooth' });
+        }
+    }
+
+    function renderAllWordsList() {
+        const container = document.getElementById('allWordsContainer');
+        container.innerHTML = '';
+
+        if(myWords.length === 0) {
+            container.innerHTML = '<p style="color:gray; font-size:13px;">දැනට කිසිදු වචනයක් පද්ධතියේ නැත.</p>';
+            return;
+        }
+
+        myWords.forEach((word, index) => {
+            const row = document.createElement('div');
+            row.className = 'word-item-row';
+            row.innerHTML = `
+                <div class="word-details">
+                    <strong>${index + 1}. ${word.jp}</strong> - <span style="color:#ef233c;">${word.si}</span>
+                </div>
+                <div class="word-action-btns">
+                    <button class="btn-edit" onclick="editWord(${index})">✏️ Edit</button>
+                    <button class="btn-delete" onclick="deleteWord(${index})">🗑️ Delete</button>
+                </div>
+            `;
+            container.appendChild(row);
+        });
+    }
+
+    function editWord(index) {
+        let word = myWords[index];
+        let newJp = prompt("ජපන් වචනය වෙනස් කරන්න:", word.jp); if(newJp === null) return;
+        let newSi = prompt("සිංහල තේරුම වෙනස් කරන්න:", word.si); if(newSi === null) return;
+
+        if(!newJp.trim() || !newSi.trim()) { alert("හිස්තැන් තබා වචන සුරැකිය නොහැක!"); return; }
+
+        myWords[index] = { jp: newJp.trim(), si: newSi.trim() };
+        localStorage.setItem('myJapaneseWords', JSON.stringify(myWords));
+        updateCounters(); renderAllWordsList(); generateWords();
+    }
+
+    function deleteWord(index) {
+        let word = myWords[index];
+        if(confirm(`"${word.jp}" වචනය මකා දැමීමට ඔබට විශ්වාසද?`)) {
+            myWords.splice(index, 1);
+            localStorage.setItem('myJapaneseWords', JSON.stringify(myWords));
+            updateCounters(); renderAllWordsList(); generateWords();
+        }
+    }
+
+    // 📅 සැබෑ දින දර්ශනය (මාස 12 දක්වා ක්‍රියා කරයි)
+    function renderCalendar() {
+        const wrapper = document.getElementById('calendarMonthsWrapper'); 
+        wrapper.innerHTML = '';
+
+        const weekdays = ["ඉරි", "සඳු", "අඟ", "බදා", "බ්‍රහ", "සිකු", "සෙන"];
+        const sinhalaMonths = ["ජනවාරි", "පෙබරවාරි", "මාර්තු", "අප්‍රේල්", "මැයි", "ජූනි", "ජූලි", "අගෝස්තු", "සැප්තැම්බර්", "ඔක්තෝබර්", "නොවැම්බර්", "දෙසැම්බර්"];
+
+        let today = new Date();
+        let currentYear = today.getFullYear();
+        let currentMonth = today.getMonth(); 
+
+        for (let m = 0; m < studyMonths; m++) {
+            let targetMonth = currentMonth + m;
+            let targetYear = currentYear + Math.floor(targetMonth / 12);
+            targetMonth = targetMonth % 12;
+
+            const monthSheet = document.createElement('div');
+            monthSheet.className = 'month-sheet';
+
+            // මාසයේ නම සහ වර්ෂය
+            const title = document.createElement('div');
+            title.className = 'month-sheet-title';
+            title.innerHTML = `📅 ${targetYear} ${sinhalaMonths[targetMonth]}`;
+            monthSheet.appendChild(title);
+
+            const daysHeader = document.createElement('div');
+            daysHeader.className = 'week-days-header';
+            weekdays.forEach(day => {
+                const dayNameBox = document.createElement('div');
+                dayNameBox.className = 'week-day-name';
+                dayNameBox.innerText = day;
+                daysHeader.appendChild(dayNameBox);
+            });
+            monthSheet.appendChild(daysHeader);
+
+            const daysGrid = document.createElement('div');
+            daysGrid.className = 'calendar-grid';
+
+            let firstDayIndex = new Date(targetYear, targetMonth, 1).getDay(); 
+            let totalDaysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+
+            // හිස් කොටු පිරවීම
+            for (let e = 0; e < firstDayIndex; e++) {
+                const emptyBox = document.createElement('div');
+                emptyBox.className = 'day-box';
+                emptyBox.style.visibility = 'hidden';
+                daysGrid.appendChild(emptyBox);
+            }
+
+            // දින කොටු නිර්මාණය
+            for (let d = 1; d <= totalDaysInMonth; d++) {
+                const dayBox = document.createElement('div');
+                
+                let dateStr = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const isDone = completedDays.hasOwnProperty(dateStr);
+                
+                let todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                let isToday = (dateStr === todayStr);
+
+                dayBox.className = `day-box ${isDone ? 'completed' : ''} ${isToday ? 'today' : ''}`;
+                dayBox.innerHTML = `${d} <span class="status">${isDone ? '✓' : (isToday ? 'අද' : '')}</span>`;
+                
+                if(isDone) { 
+                    dayBox.setAttribute('onclick', `viewDayHistory('${dateStr}')`); 
+                }
+                daysGrid.appendChild(dayBox);
+            }
+
+            monthSheet.appendChild(daysGrid);
+            wrapper.appendChild(monthSheet);
+        }
+    }
+
+    function markDayComplete() {
+        if(currentDisplayedWords.length === 0) { alert("පාඩම් කිරීමට වචන නැත!"); return; }
+        
+        let today = new Date();
+        let todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+        if (completedDays.hasOwnProperty(todayStr)) {
+            if (!confirm("ඔබ අද දවසේ වැඩ දැනටමත් අවසන් කර ඇත. එය නව වචන 5 සමඟ යාවත්කාලීන කිරීමට අවශ්‍යද?")) {
+                return;
+            }
+        }
+
+        completedDays[todayStr] = [...currentDisplayedWords];
+        localStorage.setItem('completedDays', JSON.stringify(completedDays));
+        renderCalendar();
+        
+        alert(`නියමයි! අද දවසේ (${todayStr}) වැඩ සාර්ථකව අවසන් කළා! 🎉`);
+        updateCounters(); 
+        generateWords();
+        document.getElementById('historySection').style.display = 'none';
+    }
+
+    function viewDayHistory(dateStr) {
+        const historySection = document.getElementById('historySection'); 
+        const savedWords = completedDays[dateStr];
+        if(!savedWords) return;
+
+        let html = `<div class="history-title">📜 ${dateStr} දින ඔබ පාඩම් කළ වචන:</div>`;
+        html += `<div class="word-container" style="margin-top:10px;">`;
+        savedWords.forEach(word => {
+            html += `
+                <div class="word-card" style="border-bottom-color: #2b9348; flex: 1 1 calc(50% - 12px); min-width:120px;">
+                    <div class="japanese" style="font-size:22px; margin-bottom: 5px;">${word.jp}</div>
+                    <div class="sinhala" style="font-size:15px; color:#2b9348;">${word.si}</div>
+                </div>`;
+        });
+        html += `</div>`;
+        historySection.innerHTML = html; historySection.style.display = 'block';
+        historySection.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function resetCalendar() {
+        if(confirm("ඔබට විශ්වාසද කැලැන්ඩරය මුල සිට ආරම්භ කිරීමට අවශ්‍ය බව?")) {
+            completedDays = {}; localStorage.setItem('completedDays', JSON.stringify(completedDays));
+            document.getElementById('historySection').style.display = 'none';
+            updateCounters(); generateWords(); renderCalendar();
+            if(document.getElementById('allWordsSection').style.display === 'block') { renderAllWordsList(); }
+        }
+    }
+</script>
+
+</body>
+</html>
